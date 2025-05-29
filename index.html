@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prasad's Cafe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5eddd;
+            color: #543b1c;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #5a351e;
+        }
+
+        button {
+            background-color: #7f5f4c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to Prasad's Cafe</h1>
+
+    <h2>Menu</h2>
+    <ul>
+        {% for item, price in menu.items() %}
+        <li>{{ item }} : Rs. {{ price }}</li>
+        {% endfor %}
+    </ul>
+
+    <input type="text" id="itemInput" placeholder="Enter item name">
+    <button onclick="addToOrder()">Add to Order</button>
+    <button id="submitBtn">Submit Order</button>
+
+    <h3>Your Order:</h3>
+    <ul id="orderList"></ul>
+
+    <h2 id="total">Total: Rs. 0</h2>
+
+    <script>
+        let orderItems = [];
+
+        function addToOrder() {
+            const itemInput = document.getElementById("itemInput");
+            const item = itemInput.value.trim();
+            if (item) {
+                orderItems.push(item);
+                updateOrderList();
+                itemInput.value = '';
+            }
+        }
+
+        function updateOrderList() {
+            const orderList = document.getElementById("orderList");
+            orderList.innerHTML = '';
+            orderItems.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                orderList.appendChild(li);
+            });
+        }
+
+        document.getElementById("submitBtn").addEventListener("click", function () {
+            fetch("/submit_order", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: orderItems })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Server error");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }
+
+                document.getElementById("total").innerText = `Total: Rs. ${data.total}`;
+
+                if (data.invalid_items.length > 0) {
+                    alert("These items are not in the menu: " + data.invalid_items.join(", "));
+                }
+            })
+            .catch(error => {
+                console.error("Error submitting order:", error);
+                alert("Error processing order.");
+            });
+        });
+    </script>
+
+</body>
+</html>
